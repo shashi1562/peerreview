@@ -45,7 +45,7 @@
         <span
           class="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse"
         ></span>
-        Powered by Gemini Flash
+        Powered by Llama 3.3 70B
       </div>
 
       <h1

@@ -1,13 +1,13 @@
 import { Router } from 'express'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 import { PrismaClient } from '@prisma/client'
 
 const router = Router()
 const prisma = new PrismaClient()
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 const MAX_PATCH_LINES = 300
-const GEMINI_MODEL = 'gemini-1.5-flash'
+const GROQ_MODEL = 'llama-3.3-70b-versatile'
 
 function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Not authenticated' })
@@ -66,17 +66,18 @@ router.post('/stream', requireAuth, async (req, res) => {
 
     let fullReview = ''
 
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: readmeContent.trim(),
+    const stream = await groq.chat.completions.create({
+      model: GROQ_MODEL,
+      stream: true,
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: readmeContent.trim() },
+        { role: 'user', content: `Review the following branch diff:\n\n${formattedDiff}` },
+      ],
     })
 
-    const result = await model.generateContentStream(
-      `Review the following branch diff:\n\n${formattedDiff}`
-    )
-
-    for await (const chunk of result.stream) {
-      const text = chunk.text()
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content || ''
       if (text) {
         fullReview += text
         res.write(`data: ${JSON.stringify({ text })}\n\n`)
