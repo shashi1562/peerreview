@@ -14,7 +14,7 @@ router.get('/github', (req, res) => {
   const params = new URLSearchParams({
     client_id: GITHUB_CLIENT_ID,
     scope: 'read:user repo',
-    redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/github/callback`,
+    redirect_uri: `${process.env.SERVER_URL}/api/auth/github/callback`,
   })
   res.redirect(`https://github.com/login/oauth/authorize?${params}`)
 })
